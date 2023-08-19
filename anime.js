@@ -1,40 +1,61 @@
-/*
-    perfomance.now();
-    1ms단위로 정밀한 시간계산이 가능
-    브라우저가 로딩된 순간부터 해당 구문이 호출되는 시점까지 시간을 ms단위로 반환
-    requestAnimationFrame에서는 고정된 반복횟수, 고정된 수치값안에서 원하는 시간동안 동작 = 각 반복 횟수마다의 변화량을 제어
-*/
 const btn = document.querySelector('button');
 const box = document.querySelector('#box');
-let speed = 1000;
-let tartgetValue = 500;
-let startTime = 0;
-let count = 0;
 
-// 1초동안 500px 이동
-btn.addEventListener('click',()=>{
-    startTime = performance.now();
-    requestAnimationFrame(move);
+btn.addEventListener('click', () => {
+	anime(box, {
+		prop: 'opacity',
+		value: '0.9',
+		duration: 1000,
+	});
 });
 
-function move(time){
-    //각 사이클마다 걸리는 누적시간
-    let timelast = time - startTime;
-    
-    //매 반복횟수마다 현재 걸리는 누적시간을 전체시간으로 나누면 0 ~ 1 사이의 실수값이 반환 (* 100 = 백분율)
-    //progress : 설정한 시간대비 현재 반복되는 수치값의 진행상황을 0~1사의 실수값으로 반환한 값
-    let progress = timelast / speed;
+function anime(selector, option) {
+	const startTime = performance.now();
+	let currentValue = parseFloat(getComputedStyle(selector)[option.prop]);
+	//만약 value속성으로 받은 값이 문자열이면 퍼센트 연산처리 해야되므로 정수가 아닌 실수로 값을 반환
+	const isString = typeof option.value;
+	if (isString === 'string') {
+        const parentW = parseInt(getComputedStyle(selector.parentElement).width)
+        const parentH = parseInt(getComputedStyle(selector.parentElement).height)
+		
+        const x = ['left','right','width'];
+        const y = ['top','botton','height'];
 
-    console.log('누적시간',timelast);
-    console.log('진행률',progress);
-    console.log('반복횟수',count++);
-    console.log('-------------'); 
-    
-    //진행률이 음수거 되거나 1이 넘어가면 각각 0,1로 보정
-    progress < 0 && (progress = 0);
-    progress > 1 && (progress = 1);
-    //진행률이 1에 도달하지 않을떄까지만 반복처리
-    progress < 1 && requestAnimationFrame(move);
-    //고정된 시간값을 활용한 보정된 진행률로 고정 반복횟수안에서 움직임 폭을 설정
-    box.style.marginLeft = tartgetValue * progress + 'px';
+        // 퍼센트로 적용이 안되는 속성들
+        const errProps = ['margin-left','margin-right','margin-top','margin-bottom','padding-left','padding-right','padding-top','padding-bottom'];
+
+        //퍼센트로 적용할 수 없는 속성명이 들어오면 경고문구 출력 및
+        for(let cond of errProps) {
+            if(option.prop === cond) return console.log('margin과 padding값은 %로 모션처리할 수 없습니다')
+        }
+
+        for(let cond of x) {
+            (option.prop === cond) && (currentValue = (currentValue / parentW) * 100);
+        }
+        for(let cond of y) {
+            (option.prop === cond) && (currentValue = (currentValue / parentH) * 100);
+        }
+
+		option.value = parseFloat(option.value);
+	}
+
+	requestAnimationFrame(move);
+
+	function move(time) {
+		let timelast = time - startTime;
+		let progress = timelast / option.duration;
+
+		progress < 0 && (progress = 0);
+		progress > 1 && (progress = 1);
+		progress < 1 ? requestAnimationFrame(move) : option.callback && option.callback();
+
+		let result = currentValue + (option.value - currentValue) * progress;
+        
+		//전달된 value값이 문자열이면 퍼센트 처리해야 되므로 result뒤에 %처리
+		if (isString === 'string') selector.style[option.prop] = result + '%';
+        //전달되는 속서명이 opacity이면 실수 처리
+        else if (option.prop === 'opacity') selector.style[option.prop] = result;
+		//그렇지 않은경우에는 px단위이니 result뒤에 px처리
+		else selector.style[option.prop] = result + 'px';
+	}
 }

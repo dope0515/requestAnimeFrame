@@ -3,9 +3,19 @@
     padding: 0;
     box-sizing: border-box;
 }
+.wrap {
+    width: 1000px;
+    height: 500px;
+    border: 1px solid red;
+    margin: 50px auto;
+    position: relative;
+}
 #box {
     width: 100px;
     height: 100px;
     background-color: plum;
-
+    position: absolute;
+    top: 0;
+    left: 100px;
+    opacity: 1;
 }
